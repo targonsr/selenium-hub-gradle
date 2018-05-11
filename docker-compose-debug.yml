@@ -1,0 +1,57 @@
+version: '3'
+services:
+####Hub####
+  hub_latest:
+    container_name: hub_latest
+    image: selenium/hub:3.10.0
+    ports:
+      - "4444:4444"
+####Chrome####
+  chrome:
+    container_name: chrome
+    image: selenium/node-chrome-debug:latest
+    depends_on:
+      - hub_latest
+    shm_size: 256m
+    environment:
+      - HUB_PORT_4444_TCP_ADDR=hub_latest
+      - HUB_PORT_4444_TCP_PORT=4444
+      - HUB_ENV_no_proxy=localhost
+      - SCREEN_WIDTH=1920
+      - SCREEN_HEIGHT=1080
+      - no_proxy=localhost
+    ports:
+      - "5900:5900"
+    logging:
+      driver: "none"
+
+###Firefox####
+  firefox:
+    container_name: firefox
+    image: selenium/node-firefox-debug:3.10.0
+    depends_on:
+      - hub_latest
+    environment:
+      - HUB_PORT_4444_TCP_ADDR=hub_latest
+      - HUB_PORT_4444_TCP_PORT=4444
+      - HUB_ENV_no_proxy=localhost
+      - SCREEN_WIDTH=1920
+      - SCREEN_HEIGHT=1080
+      - no_proxy=localhost
+    ports:
+      - "5901:5900"
+    logging:
+      driver: "none"
+
+###Tests storage and execution####
+  tests:
+    container_name: tests
+    image: tests-base
+    build: .
+    volumes:
+      - .:/opt/automation/
+      - ./gradleCache:/home/tests/.gradle/caches
+      - ./build/reports:/opt/automation/build/reports
+      - ./report:/opt/automation/report
+    depends_on:
+      - chrome

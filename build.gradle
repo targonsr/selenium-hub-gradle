@@ -1,0 +1,87 @@
+import java.text.SimpleDateFormat
+
+plugins {
+    id 'java'
+}
+
+group 'webflame-ryszard-targonski'
+version '1.0-SNAPSHOT'
+
+ext {
+    drivers = ["firefox", "chrome", "remoteFirefox", "remoteChrome"]
+    localDrivers = ["firefox", "chrome"]
+    remoteDrivers = ["remoteFirefox", "remoteChrome"]
+
+    reportDir = "./report"
+
+    seleniumVersion = '3.11.0'
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+subprojects {
+    tasks.withType(Test) {
+        maxParallelForks = Runtime.runtime.availableProcessors()
+    }
+}
+
+drivers.each { driver ->
+    task "${driver}Test"(type: Test) {
+        systemProperty "env", (System.properties['env'] != null) ? System.properties['env'] : "test"
+        systemProperty "driverName", driver
+        systemProperty "build_tag", (System.properties['build_tag'] != null) ? System.properties['build_tag'] : buildTime()
+        systemProperty "reportDir", reportDir
+
+        reports {
+            html.destination = reporting.file("$name")
+        }
+    }
+}
+
+test {
+    // execute gradle with --continue flag to not brake build on first failure
+    dependsOn localDrivers.collect { tasks["${it}Test"] }
+    enabled = false
+}
+
+task remoteTest(type: Test) {
+    dependsOn remoteDrivers.collect { tasks["${it}Test"] }
+    enabled = false
+}
+
+configure(test) {
+    systemProperties System.properties
+}
+
+def buildTime() {
+    def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'")
+    df.setTimeZone(TimeZone.getTimeZone("UTC"))
+    return df.format(new Date())
+}
+
+tasks.withType(Test) {
+    outputs.upToDateWhen { false }
+
+    useTestNG() {
+        suites 'src/test/resources/testng.xml'
+        excludeGroups project.hasProperty('excluded_groups') ? project.excluded_groups : ''
+        outputDirectory = file(reportDir)
+        reports.junitXml.enabled = false
+    }
+}
+
+dependencies {
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-api', version: "$seleniumVersion"
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-server', version: "$seleniumVersion"
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: "$seleniumVersion"
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-firefox-driver', version: "$seleniumVersion"
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-chrome-driver', version: "$seleniumVersion"
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-support', version: "$seleniumVersion"
+    compile group: 'org.testng', name: 'testng', version: '6.14.3'
+    compile group: 'org.assertj', name: 'assertj-core', version: '3.9.1'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+}

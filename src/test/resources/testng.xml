@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="Selenium Tests - targonsr" preserve-order="true">
+    <listeners>
+        <listener class-name="org.testng.reporters.XMLReporter"/>
+        <listener class-name="org.testng.reporters.FailedReporter"/>
+        <listener class-name="any.pack.listeners.ScreenShotListener"/>
+    </listeners>
+
+    <test name="part1" preserve-order="true">
+        <classes>
+            <class name="any.pack.tests.SimpleTest"/>
+        </classes>
+    </test>
+
+    <test name="part2" preserve-order="true">
+        <parameter name="role" value="someRole"/>
+        <groups>
+            <run>
+                <include name="someGroup"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="some.package2.*"/>
+        </packages>
+    </test>
+</suite>
